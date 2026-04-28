@@ -1,0 +1,45 @@
+4. Multi-Stream Pipeline (overlap CPU↔GPU)
+
+
+#include <opencv2/opencv.hpp>
+#include <opencv2/cudaimgproc.hpp>
+
+int main() {
+    cv::VideoCapture cap(0);
+
+    // Two CUDA streams for double-buffering
+    cv::cuda::Stream stream1, stream2;
+
+    cv::Mat     frame1, frame2;
+    cv::cuda::GpuMat d_frame1, d_gray1,
+                     d_frame2, d_gray2;
+
+    cap >> frame1;
+    d_frame1.upload(frame1, stream1);
+
+    while (true) {
+        // Capture next frame while GPU processes current
+        cap >> frame2;
+
+        // Async GPU processing on stream1
+        cv::cuda::cvtColor(d_frame1, d_gray1,
+                           cv::COLOR_BGR2GRAY, 0, stream1);
+
+        // Async upload of next frame on stream2
+        d_frame2.upload(frame2, stream2);
+
+        // Sync and display stream1 result
+        stream1.waitForCompletion();
+        cv::Mat result;
+        d_gray1.download(result);
+        cv::imshow("Multi-Stream", result);
+
+        // Swap buffers
+        std::swap(d_frame1, d_frame2);
+        std::swap(frame1,   frame2);
+        std::swap(stream1,  stream2);
+
+        if (cv::waitKey(1) == 'q') break;
+    }
+    return 0;
+}
