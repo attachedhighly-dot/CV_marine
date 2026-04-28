@@ -1,3 +1,6 @@
+ 
+1. Basic CUDA-Accelerated Capture & Display
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/cudaimgproc.hpp>
 #include <opencv2/cudawarping.hpp>
@@ -34,4 +37,5 @@ int main() {
         if (cv::waitKey(1) == 'q') break;
     }
     return 0;
-}
+
+
