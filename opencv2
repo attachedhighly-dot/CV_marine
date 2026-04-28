@@ -1,0 +1,29 @@
+
+
+
+2. NVIDIA Hardware Decoder (cudacodec)
+
+#include <opencv2/cudacodec.hpp>
+
+int main() {
+    // Hardware-decoded — zero CPU decode cost
+    auto reader = cv::cudacodec::createVideoReader("input.mp4");
+    // Or RTSP stream:
+    // auto reader = cv::cudacodec::createVideoReader("rtsp://camera-ip/stream");
+
+    cv::cuda::GpuMat d_frame, d_gray;
+
+    while (true) {
+        if (!reader->nextFrame(d_frame)) break;
+
+        // Already on GPU — process directly
+        cv::cuda::cvtColor(d_frame, d_gray, cv::COLOR_BGRA2GRAY);
+
+        cv::Mat display;
+        d_gray.download(display);
+        cv::imshow("HW Decoded", display);
+
+        if (cv::waitKey(1) == 'q') break;
+    }
+    return 0;
+}
