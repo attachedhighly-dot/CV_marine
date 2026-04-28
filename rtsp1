@@ -1,0 +1,3 @@
+Camera 1 (RTSP) ──▶ Thread 1 ──▶ CUDA Stream 1 ──▶ ┐
+Camera 2 (RTSP) ──▶ Thread 2 ──▶ CUDA Stream 2 ──▶ ├──▶ Grid Display
+Camera N (RTSP) ──▶ Thread N ──▶ CUDA Stream N ──▶ ┘
