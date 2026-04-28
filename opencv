@@ -1,0 +1,37 @@
+#include <opencv2/opencv.hpp>
+#include <opencv2/cudaimgproc.hpp>
+#include <opencv2/cudawarping.hpp>
+#include <opencv2/cudafilters.hpp>
+
+int main() {
+    cv::VideoCapture cap(0);  // webcam
+    cap.set(cv::CAP_PROP_FRAME_WIDTH,  1920);
+    cap.set(cv::CAP_PROP_FRAME_HEIGHT, 1080);
+    cap.set(cv::CAP_PROP_FPS, 60);
+
+    cv::Mat     frame;
+    cv::cuda::GpuMat d_frame, d_gray, d_blurred;
+
+    while (true) {
+        cap >> frame;
+        if (frame.empty()) break;
+
+        // Upload to GPU
+        d_frame.upload(frame);
+
+        // GPU operations
+        cv::cuda::cvtColor(d_frame, d_gray, cv::COLOR_BGR2GRAY);
+
+        auto gauss = cv::cuda::createGaussianFilter(
+            CV_8UC1, CV_8UC1, cv::Size(15, 15), 2.0);
+        gauss->apply(d_gray, d_blurred);
+
+        // Download back to CPU for display
+        cv::Mat result;
+        d_blurred.download(result);
+
+        cv::imshow("CUDA Video", result);
+        if (cv::waitKey(1) == 'q') break;
+    }
+    return 0;
+}
