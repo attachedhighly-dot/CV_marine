@@ -1,0 +1,41 @@
+
+CUDA Canny Edge Detection Pipeline
+
+#include <opencv2/opencv.hpp>
+#include <opencv2/cudaimgproc.hpp>
+#include <opencv2/cudafilters.hpp>
+
+int main() {
+    cv::VideoCapture cap(0);
+    cv::Mat frame;
+    cv::cuda::GpuMat d_frame, d_gray, d_edges, d_resized;
+
+    // Pre-create filters (expensive to init — do ONCE outside loop)
+    auto canny = cv::cuda::createCannyEdgeDetector(50.0, 150.0);
+    auto gauss  = cv::cuda::createGaussianFilter(
+                    CV_8UC1, CV_8UC1, cv::Size(5,5), 1.5);
+
+    while (true) {
+        cap >> frame;
+        if (frame.empty()) break;
+
+        d_frame.upload(frame);
+
+        // Resize on GPU
+        cv::cuda::resize(d_frame, d_resized,
+                         cv::Size(1280, 720), 0, 0,
+                         cv::INTER_LINEAR);
+
+        // Grayscale → Gaussian → Canny (all GPU)
+        cv::cuda::cvtColor(d_resized, d_gray, cv::COLOR_BGR2GRAY);
+        gauss->apply(d_gray, d_gray);
+        canny->detect(d_gray, d_edges);
+
+        cv::Mat edges_cpu;
+        d_edges.download(edges_cpu);
+
+        cv::imshow("CUDA Canny", edges_cpu);
+        if (cv::waitKey(1) == 'q') break;
+    }
+    return 0;
+}
